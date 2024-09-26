@@ -1,0 +1,7 @@
+integrations:
+ - name: nri-flex 
+   config:
+     name: Splunk-NewRelic
+     apis:
+       - name: ServerCertificate
+         file: C:\Users\RajKansal\OneDrive - cloudEQ\Desktop\pem\certificate.json
