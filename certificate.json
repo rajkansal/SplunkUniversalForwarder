@@ -1,20 +1,61 @@
-{
-  "name": "custom_metrics_integration",
-  "subject": {
-    "CN": "SplunkServerDefaultCert",
-    "O": "SplunkUser"
-  },
-  "issuer": {
-    "C": "US",
-    "ST": "CA",
-    "L": "San Francisco",
-    "O": "Splunk",
-    "CN": "SplunkCommonCA",
-    "E": "support@splunk.com"
-  },
-  "validFrom": "2024-09-16 15:02:00",
-  "validTo": "2027-09-16 15:02:00",
-  "validFromTimestamp": 1726479120000,
-  "validToTimestamp": 1821087120000,
-  "publicKey": "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuK+V3ghy/oOifkGbCy73\r\nbYF2gVDz/qIC1aRMqaDkZjvrW1mhHIgcFkHDjvaKs33CZ5pHLiXSo1MKVf0J7bcD\r\nZizYUr23tV4UFjzC4AjDXmG1JvmM9sjEbr9Qh/SKyF232UJhg8nlk1Hr76mwAF1O\r\nGpjyagrXDTQRuxzPb7Smug9ncmr/EOwI5BEwrCqKWn8oyAyHgGNc3LihU5hw8MDr\r\nnHpGQrv4v21ULFSC1Fg0qs3KPgxLvmJ5njcvjPdfSDMU39I3Y0tUfjT41oze7xcu\r\nR8HpBVuGAckVbZf11UiRZ1KQNTSk5gwPcQOx5MaXmBKGC5NrBo87/qcv3BFzYx2q\r\nEwIDAQAB\r\n-----END PUBLIC KEY-----\r\n"
-}
+
+
+
+
+
+const fs = require('fs');
+const forge = require('node-forge');
+const path = require('path');
+
+// Read the PEM file
+const pemFilePath = 'C:\\Program Files\\SplunkUniversalForwarder\\etc\\auth\\server.pem'; // Update this path
+const pem = fs.readFileSync(pemFilePath, 'utf8');
+
+// Convert PEM to a certificate object
+const cert = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.pem.decode(pem)[0].body));
+
+// Extract fields
+const validFrom = cert.validity.notBefore; // Date object
+const validTo = cert.validity.notAfter; // Date object
+
+// Function to format the date
+const formatDate = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+};
+
+// Get validFrom and validTo timestamps in milliseconds
+const validFromTimestamp = validFrom.getTime(); // Milliseconds
+const validToTimestamp = validTo.getTime(); // Milliseconds
+
+// Create JSON object
+const certificateJson = {
+    name: "custom_metrics_integration",
+    subject: cert.subject.attributes.reduce((obj, attr) => {
+        obj[attr.shortName] = attr.value;
+        return obj;
+    }, {}),
+    issuer: cert.issuer.attributes.reduce((obj, attr) => {
+        obj[attr.shortName] = attr.value;
+        return obj;
+    }, {}),
+    validFrom: formatDate(validFrom), // Format the date
+    validTo: formatDate(validTo), // Format the date
+    validFromTimestamp: validFromTimestamp, // Milliseconds timestamp for validFrom
+    validToTimestamp: validToTimestamp, // Milliseconds timestamp for validTo
+    publicKey: forge.pki.publicKeyToPem(cert.publicKey)
+};
+
+// Define the output path
+const outputFilePath = path.join(__dirname, 'certificate.json');
+
+// Write the JSON to a file
+fs.writeFileSync(outputFilePath, JSON.stringify(certificateJson, null, 2));
+
+console.log(`JSON file created at: ${outputFilePath}`);
+
+
+
+
+
+
+
